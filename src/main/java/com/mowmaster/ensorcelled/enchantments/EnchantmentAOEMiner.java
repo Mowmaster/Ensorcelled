@@ -9,12 +9,14 @@ import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.inventory.EquipmentSlotType;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
+import net.minecraft.item.PickaxeItem;
 import net.minecraft.util.Direction;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.EntityRayTraceResult;
 import net.minecraft.util.math.RayTraceResult;
 import net.minecraft.world.World;
 import net.minecraftforge.common.MinecraftForge;
+import net.minecraftforge.common.ToolType;
 import net.minecraftforge.event.ForgeEventFactory;
 import net.minecraftforge.event.world.BlockEvent;
 import net.minecraftforge.eventbus.api.EventPriority;
@@ -48,8 +50,7 @@ public class EnchantmentAOEMiner  extends Enchantment
     public int getMaxLevel() {
         return 10;
     }
-
-    @Override
+    /*@Override
     public boolean canApply(ItemStack stack) {
         return true;
     }
@@ -57,6 +58,26 @@ public class EnchantmentAOEMiner  extends Enchantment
     @Override
     public boolean canApplyAtEnchantingTable(ItemStack stack) {
         return true;
+    }*/
+
+    @Override
+    public boolean canApply(ItemStack stack) {
+        if(stack.getItem() instanceof PickaxeItem || stack.getToolTypes().contains(ToolType.PICKAXE))
+        {
+            return (stack.getItem() instanceof PickaxeItem || stack.getToolTypes().contains(ToolType.PICKAXE));
+        }
+
+        return false;
+    }
+
+    @Override
+    public boolean canApplyAtEnchantingTable(ItemStack stack) {
+        if(stack.getItem() instanceof PickaxeItem || stack.getToolTypes().contains(ToolType.PICKAXE))
+        {
+            return (stack.getItem() instanceof PickaxeItem || stack.getToolTypes().contains(ToolType.PICKAXE));
+        }
+
+        return false;
     }
 
     @Override
