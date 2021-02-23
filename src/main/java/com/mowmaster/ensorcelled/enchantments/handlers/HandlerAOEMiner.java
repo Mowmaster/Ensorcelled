@@ -6,10 +6,12 @@ import net.minecraft.block.BlockState;
 import net.minecraft.block.FlowingFluidBlock;
 import net.minecraft.enchantment.EnchantmentHelper;
 import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.entity.player.ServerPlayerEntity;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.ItemUseContext;
 import net.minecraft.item.PickaxeItem;
+import net.minecraft.tileentity.TileEntity;
 import net.minecraft.util.Direction;
 import net.minecraft.util.math.*;
 import net.minecraft.util.math.shapes.ISelectionContext;
@@ -23,28 +25,31 @@ import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fluids.IFluidBlock;
 import net.minecraftforge.fml.common.Mod;
 
+import java.util.ArrayList;
+import java.util.List;
+
 @Mod.EventBusSubscriber
 public class HandlerAOEMiner {
 
-    @SubscribeEvent(priority = EventPriority.HIGHEST)
+    @SubscribeEvent(priority = EventPriority.LOW)
     public static void AOEMining(BlockEvent.BreakEvent event)
     {
+        PlayerEntity player = event.getPlayer();
+        if (!(player instanceof ServerPlayerEntity)) {
+            return;
+        }
 
         World world = event.getPlayer().getEntityWorld();
-        PlayerEntity player = event.getPlayer();
-        BlockPos pos = event.getPos();
-        Block block = event.getState().getBlock();
-        BlockState state = world.getBlockState(pos);
-        ItemStack getTool = player.getHeldItem(player.getActiveHand());
-
         if(!world.isRemote)
         {
             if(player != null)
             {
+                ItemStack getTool = player.getHeldItem(player.getActiveHand());
                 if(getTool.getItem() instanceof PickaxeItem || getTool.getToolTypes().contains(ToolType.PICKAXE))
                 {
                     if(EnchantmentHelper.getEnchantmentLevel(EnchantmentRegistry.MINER,player.getHeldItem(player.getActiveHand()))!=0)
                     {
+                        BlockPos pos = event.getPos();
                         ItemStack tool = player.getHeldItem(player.getActiveHand());
                         if (player.swingingHand == null) {return;}
 
@@ -55,7 +60,6 @@ public class HandlerAOEMiner {
                         {
                             //Setup a default because i like redundency?
                             Direction facing = Direction.UP;
-
                             if(result.getType() == RayTraceResult.Type.BLOCK)
                             {
                                 ItemUseContext context = new ItemUseContext(player,player.getActiveHand(),((BlockRayTraceResult) result));
@@ -74,6 +78,18 @@ public class HandlerAOEMiner {
                             int ymin=0;
                             int ymax=0;
 
+                            //Build Work Queue
+                            List<BlockPos> workQueue = new ArrayList<>();
+                            for(int c=zmin;c<=zmax;c++) {
+                                for (int a = xmin; a <= xmax; a++)
+                                {
+                                    for (int b = ymin; b <= ymax; b++)
+                                    {
+                                        workQueue.add(pos.add(a,b,c));
+                                    }
+                                }
+                            }
+
                             if(player.isSwimming() || !player.isOnGround())
                             {
                                 if(facing.equals(Direction.DOWN) || facing.equals(Direction.UP)) {zmin=-lvl;zmax=+lvl;xmin=-lvl;xmax=+lvl;ymin=0;ymax=0;}
@@ -90,27 +106,26 @@ public class HandlerAOEMiner {
                             if(player.isSneaking()) {}
                             else
                             {
-                                for(int c=zmin;c<=zmax;c++) {
-                                    for (int a = xmin; a <= xmax; a++)
-                                        for (int b = ymin; b <= ymax; b++)
-                                        {
-                                            BlockPos posOfBlock = pos.add(a,b,c);
-                                            BlockState blockToBreak = world.getBlockState(posOfBlock);
-                                            if (ForgeEventFactory.doPlayerHarvestCheck(player,blockToBreak,true) && !blockToBreak.getBlock().isAir(blockToBreak, world, posOfBlock) && !(blockToBreak.getBlock() instanceof IFluidBlock || blockToBreak.getBlock() instanceof FlowingFluidBlock) && blockToBreak.getBlockHardness(world, posOfBlock) != -1.0F) {
+                                for(int i=0;i<workQueue.size();i++)
+                                {
+                                    //Should avoid breaking any TE's
+                                    if(world.getTileEntity(workQueue.get(i)) instanceof TileEntity)continue;
 
-                                                int maxdur = tool.getMaxDamage();
-                                                int damdone = tool.getDamage();
-                                                if ((Math.subtractExact(maxdur,damdone)>=0)) {
-                                                    player.getHeldItem(player.getActiveHand()).damageItem(1,player,playerEntity -> {});
-                                                    if(blockToBreak.canHarvestBlock(world,pos,player))
-                                                    {
-                                                        blockToBreak.getBlock().harvestBlock(world, player, posOfBlock, blockToBreak, null, player.getHeldItemMainhand());
-                                                        blockToBreak.getBlock().onBlockHarvested(world, posOfBlock, blockToBreak, player);
-                                                        world.removeBlock(posOfBlock, false);
-                                                    }
-                                                }
+                                    BlockState blockToBreak = world.getBlockState(workQueue.get(i));
+                                    if (ForgeEventFactory.doPlayerHarvestCheck(player,blockToBreak,true) && !blockToBreak.getBlock().isAir(blockToBreak, world, workQueue.get(i)) && !(blockToBreak.getBlock() instanceof IFluidBlock || blockToBreak.getBlock() instanceof FlowingFluidBlock) && blockToBreak.getBlockHardness(world, workQueue.get(i)) != -1.0F) {
+
+                                        int maxdur = tool.getMaxDamage();
+                                        int damdone = tool.getDamage();
+                                        if ((Math.subtractExact(maxdur,damdone)>=0)) {
+                                            player.getHeldItem(player.getActiveHand()).damageItem(1,player,playerEntity -> {});
+                                            if(blockToBreak.canHarvestBlock(world,pos,player))
+                                            {
+                                                blockToBreak.getBlock().harvestBlock(world, player, workQueue.get(i), blockToBreak, null, player.getHeldItemMainhand());
+                                                blockToBreak.getBlock().onBlockHarvested(world, workQueue.get(i), blockToBreak, player);
+                                                world.removeBlock(workQueue.get(i), false);
                                             }
                                         }
+                                    }
                                 }
                             }
                         }
