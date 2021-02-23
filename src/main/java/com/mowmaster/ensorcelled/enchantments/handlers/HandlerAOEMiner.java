@@ -1,24 +1,20 @@
 package com.mowmaster.ensorcelled.enchantments.handlers;
 
 import com.mowmaster.ensorcelled.enchantments.EnchantmentRegistry;
-import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.FlowingFluidBlock;
 import net.minecraft.enchantment.EnchantmentHelper;
 import net.minecraft.enchantment.Enchantments;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.player.ServerPlayerEntity;
-import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.ItemUseContext;
 import net.minecraft.item.PickaxeItem;
 import net.minecraft.tileentity.TileEntity;
 import net.minecraft.util.Direction;
 import net.minecraft.util.math.*;
-import net.minecraft.util.math.shapes.ISelectionContext;
 import net.minecraft.world.World;
 import net.minecraft.world.server.ServerWorld;
-import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.common.ToolType;
 import net.minecraftforge.event.ForgeEventFactory;
 import net.minecraftforge.event.world.BlockEvent;
@@ -80,18 +76,6 @@ public class HandlerAOEMiner {
                             int ymin=0;
                             int ymax=0;
 
-                            //Build Work Queue
-                            List<BlockPos> workQueue = new ArrayList<>();
-                            for(int c=zmin;c<=zmax;c++) {
-                                for (int a = xmin; a <= xmax; a++)
-                                {
-                                    for (int b = ymin; b <= ymax; b++)
-                                    {
-                                        workQueue.add(pos.add(a,b,c));
-                                    }
-                                }
-                            }
-
                             if(player.isSwimming() || !player.isOnGround())
                             {
                                 if(facing.equals(Direction.DOWN) || facing.equals(Direction.UP)) {zmin=-lvl;zmax=+lvl;xmin=-lvl;xmax=+lvl;ymin=0;ymax=0;}
@@ -105,6 +89,18 @@ public class HandlerAOEMiner {
                                 else if(facing.equals(Direction.NORTH) || facing.equals(Direction.SOUTH)) {zmin=0;zmax=0;xmin=-lvl;xmax=+lvl;ymin=-1;ymax=+((2*lvl)-1);}
                             }
 
+                            //Build Work Queue
+                            List<BlockPos> workQueue = new ArrayList<>();
+                            for(int c=zmin;c<=zmax;c++) {
+                                for (int a = xmin; a <= xmax; a++)
+                                {
+                                    for (int b = ymin; b <= ymax; b++)
+                                    {
+                                        workQueue.add(pos.add(a,b,c));
+                                    }
+                                }
+                            }
+
                             if(player.isSneaking()) {}
                             else
                             {
@@ -115,7 +111,7 @@ public class HandlerAOEMiner {
 
                                     BlockState blockToBreak = world.getBlockState(workQueue.get(i));
                                     if (ForgeEventFactory.doPlayerHarvestCheck(player,blockToBreak,true) && !blockToBreak.getBlock().isAir(blockToBreak, world, workQueue.get(i)) && !(blockToBreak.getBlock() instanceof IFluidBlock || blockToBreak.getBlock() instanceof FlowingFluidBlock) && blockToBreak.getBlockHardness(world, workQueue.get(i)) != -1.0F) {
-
+System.out.print("WORKING");
                                         int maxdur = tool.getMaxDamage();
                                         int damdone = tool.getDamage();
                                         if ((Math.subtractExact(maxdur,damdone)>=0)) {
