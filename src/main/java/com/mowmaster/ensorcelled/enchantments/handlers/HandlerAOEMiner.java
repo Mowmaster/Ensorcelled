@@ -5,6 +5,7 @@ import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.FlowingFluidBlock;
 import net.minecraft.enchantment.EnchantmentHelper;
+import net.minecraft.enchantment.Enchantments;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.player.ServerPlayerEntity;
 import net.minecraft.item.Item;
@@ -16,6 +17,7 @@ import net.minecraft.util.Direction;
 import net.minecraft.util.math.*;
 import net.minecraft.util.math.shapes.ISelectionContext;
 import net.minecraft.world.World;
+import net.minecraft.world.server.ServerWorld;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.common.ToolType;
 import net.minecraftforge.event.ForgeEventFactory;
@@ -122,6 +124,11 @@ public class HandlerAOEMiner {
                                             {
                                                 blockToBreak.getBlock().harvestBlock(world, player, workQueue.get(i), blockToBreak, null, player.getHeldItemMainhand());
                                                 blockToBreak.getBlock().onBlockHarvested(world, workQueue.get(i), blockToBreak, player);
+                                                int expdrop = blockToBreak.getBlock().getExpDrop(blockToBreak,world,workQueue.get(i),
+                                                        (EnchantmentHelper.getEnchantments(player.getHeldItemMainhand()).containsKey(Enchantments.FORTUNE))?(EnchantmentHelper.getEnchantmentLevel(Enchantments.FORTUNE,player.getHeldItemMainhand())):(0),
+                                                        (EnchantmentHelper.getEnchantments(player.getHeldItemMainhand()).containsKey(Enchantments.SILK_TOUCH))?(EnchantmentHelper.getEnchantmentLevel(Enchantments.SILK_TOUCH,player.getHeldItemMainhand())):(0));
+                                                //drop xp above player
+                                                if(expdrop>0)blockToBreak.getBlock().dropXpOnBlockBreak((ServerWorld)world,player.getPosition().add(0,1,0),expdrop);
                                                 world.removeBlock(workQueue.get(i), false);
                                             }
                                         }
